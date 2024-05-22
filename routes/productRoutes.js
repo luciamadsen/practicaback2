@@ -1,9 +1,11 @@
 const express = require('express');
-const authenticateUser = require('../middleware/authMiddleware');
+const productController = require('../controllers/productController');
+const authMiddleware = require('../middlewares/authMiddleware');
+const roleMiddleware = require('../middlewares/roleMiddleware');
 const router = express.Router();
 
-router.get('/products', authenticateUser, (req, res) => {
-  res.send(`Bienvenido ${req.session.email} a la página de productos`);
-});
+router.post('/', authMiddleware, roleMiddleware('admin'), productController.createProduct);
+router.put('/:id', authMiddleware, roleMiddleware('admin'), productController.updateProduct);
+router.delete('/:id', authMiddleware, roleMiddleware('admin'), productController.deleteProduct);
 
 module.exports = router;

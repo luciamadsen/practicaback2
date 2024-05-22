@@ -1,60 +1,45 @@
-require('dotenv').config();
-
 const express = require('express');
+const mongoose = require('mongoose');
+const cookieParser = require('cookie-parser');
 const session = require('express-session');
-const bodyParser = require('body-parser');
 const passport = require('passport');
-const LocalStrategy = require('passport-local').Strategy;
-const GitHubStrategy = require('passport-github').Strategy;
-const bcrypt = require('bcrypt');
+require('dotenv').config();
+require('./config/passportConfig');
+
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const cartRoutes = require('./routes/cartRoutes');
+const productRoutes = require('./routes/productRoutes');
+const errorMiddleware = require('./middlewares/errorMiddleware');
+const { mongoUrl, sessionSecret } = require('./config/config');
 
 const app = express();
-const port = 3000;
 
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(session({ secret: 'secret', resave: false, saveUninitialized: true }));
+app.use(express.json());
+app.use(cookieParser());
+app.use(session({
+  secret: sessionSecret,
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false } 
+}));
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.use('/', require('./routes/index'));
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/carts', cartRoutes);
+app.use('/api/products', productRoutes);
 
-app.listen(port, () => {
-  console.log(`Servidor corriendo en http://localhost:${port}`);
-});
+app.use(errorMiddleware);
 
-
-passport.use(new LocalStrategy(
-  async function(username, password, done) {
-    try {
-      const user = users.find(user => user.email === username);
-      if (!user) {
-        return done(null, false, { message: 'Usuario no encontrado.' });
-      }
-      if (!await bcrypt.compare(password, user.password)) {
-        return done(null, false, { message: 'Contraseña incorrecta.' });
-      }
-      return done(null, user);
-    } catch (error) {
-      return done(error);
-    }
-  }
-));
-
-passport.use(new GitHubStrategy({
-    clientID: b5e14c738345e5c48e,
-    clientSecret: cfccf0e641a9727c2e6f9c6e9ef7bf694afdde9a,
-    callbackURL: "http://localhost:3000/auth/github/callback"
-  },
-  function(accessToken, refreshToken, profile, cb) {
-    return cb(null, profile);
-  }
-));
-
-passport.serializeUser(function(user, done) {
-  done(null, user);
-});
-
-passport.deserializeUser(function(obj, done) {
-  done(null, obj);
-});
-
+mongoose.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log('Connected to MongoDB');
+    app.listen(3000, () => {
+      console.log('Server is running on port 3000');
+    });
+  })
+  .catch(err => {
+    console.error('Failed to connect to MongoDB', err);
+  });

@@ -1,33 +1,22 @@
-const userService = require('../services/userService');
-const UserDTO = require('../dtos/userDTO');
+const logger = require('../utils/logger');
+const User = require('../models/userModel');
+const { hashPassword } = require('../utils/handlePassword');
 
-class UserController {
-  async register(req, res, next) {
-    try {
-      const user = await userService.register(req.body);
-      res.status(201).json(new UserDTO(user));
-    } catch (error) {
-      next(error);
-    }
+const registerUser = async (req, res) => {
+  try {
+    const { first_name, last_name, email, age, password } = req.body;
+    const hashedPassword = await hashPassword(password);
+    const newUser = new User({ first_name, last_name, email, age, password: hashedPassword });
+
+    await newUser.save();
+    logger.info(`User registered: ${email}`);
+    res.status(201).json({ message: 'User registered successfully' });
+  } catch (error) {
+    logger.error('Error registering user:', error);
+    res.status(500).json({ message: 'Error registering user' });
   }
+};
 
-  async login(req, res, next) {
-    try {
-      const token = await userService.login(req.body);
-      res.json({ token });
-    } catch (error) {
-      next(error);
-    }
-  }
 
-  async current(req, res, next) {
-    try {
-      const user = await userService.getCurrent(req.user);
-      res.json(new UserDTO(user));
-    } catch (error) {
-      next(error);
-    }
-  }
-}
 
-module.exports = new UserController();
+module.exports = { registerUser };

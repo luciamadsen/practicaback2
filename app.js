@@ -10,6 +10,7 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 const productRoutes = require('./routes/productRoutes');
+const logger = require('./utils/logger');
 const errorMiddleware = require('./middlewares/errorMiddleware');
 const { mongoUrl, sessionSecret } = require('./config/config');
 
@@ -21,10 +22,20 @@ app.use(session({
   secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false } 
+  cookie: { secure: false }
 }));
 app.use(passport.initialize());
 app.use(passport.session());
+
+app.get('/loggerTest', (req, res) => {
+  logger.debug('Debug log');
+  logger.http('HTTP log');
+  logger.info('Info log');
+  logger.warn('Warning log');
+  logger.error('Error log');
+  logger.fatal('Fatal log');
+  res.send('Logger test complete');
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -35,11 +46,11 @@ app.use(errorMiddleware);
 
 mongoose.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
-    console.log('Connected to MongoDB');
+    logger.info('Connected to MongoDB');
     app.listen(3000, () => {
-      console.log('Server is running on port 3000');
+      logger.info('Server is running on port 3000');
     });
   })
   .catch(err => {
-    console.error('Failed to connect to MongoDB', err);
+    logger.error('Failed to connect to MongoDB', err);
   });

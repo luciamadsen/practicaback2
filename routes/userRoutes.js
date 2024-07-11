@@ -1,9 +1,10 @@
 const express = require('express');
-const userController = require('../controllers/userController');
-const authMiddleware = require('../middlewares/authMiddleware');
 const router = express.Router();
+const userController = require('../controllers/userController');
+const { authenticateJWT } = require('../middleware/authMiddleware');
+const upload = require('../middleware/multerMiddleware');
 
-
-router.get('/current', authMiddleware, userController.current);
+router.post('/premium/:uid', authenticateJWT, userController.updateUserToPremium);
+router.post('/:uid/documents', authenticateJWT, upload.array('documents'), userController.uploadUserDocuments);
 
 module.exports = router;

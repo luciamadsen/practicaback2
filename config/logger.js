@@ -1,27 +1,20 @@
-const { createLogger, transports, format } = require('winston');
+const { createLogger, format, transports } = require('winston');
+const { combine, timestamp, printf } = format;
 
-const logger = createLogger({
-    level: 'debug',  
-    format: format.combine(
-        format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-        format.errors({ stack: true }),
-        format.splat(),
-        format.json()
-    ),
-    defaultMeta: { service: 'your-service-name' },  
-    transports: [
-        new transports.Console({
-            format: format.combine(
-                format.colorize(),
-                format.simple()
-            )
-        }),
-        new transports.File({ filename: 'error.log', level: 'error' })
-    ]
+const customFormat = printf(({ level, message, timestamp }) => {
+    return `${timestamp} [${level}]: ${message}`;
 });
 
-if (process.env.NODE_ENV === 'production') {
-    logger.add(new transports.File({ filename: 'combined.log' }));
-}
+const logger = createLogger({
+    level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+    format: combine(
+        timestamp(),
+        customFormat
+    ),
+    transports: [
+        new transports.Console(),
+        new transports.File({ filename: 'errors.log', level: 'error' })
+    ]
+});
 
 module.exports = logger;
